@@ -45,7 +45,7 @@ The app features a sophisticated dark theme with:
 
 1. **Clone the repository**:
    ```bash
-   git clone <your-repo-url>
+   git clone <"https://github.com/Roman-Dewan/Expense-Tracker.git">
    ```
 
 2. **Navigate to the project directory**:
