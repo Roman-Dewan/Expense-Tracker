@@ -166,12 +166,10 @@ class AppDrawer extends StatelessWidget {
                 FutureBuilder<PackageInfo>(
                   future: PackageInfo.fromPlatform(),
                   builder: (context, snapshot) {
-                    String versionDisplay = 'v1.0.0+1';
+                    String versionDisplay = 'v1.0.1';
                     if (snapshot.hasData) {
                       final info = snapshot.data!;
-                      versionDisplay = info.buildNumber.isNotEmpty
-                          ? 'v${info.version}+${info.buildNumber}'
-                          : 'v${info.version}';
+                      versionDisplay = 'v${info.version}';
                     }
                     return Text(
                       versionDisplay,
