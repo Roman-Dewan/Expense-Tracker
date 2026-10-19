@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import '../viewmodels/expense_provider.dart';
 import '../theme/app_theme.dart';
 import '../models/transaction.dart';
-import 'add_transaction_screen.dart';
+import 'add_edit_transaction_screen.dart';
+import 'history_screen.dart';
+import 'app_drawer.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -12,17 +14,16 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
         title: const Text('Expense Tracker'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.account_balance_wallet_outlined,
-              color: AppTheme.accentPurple,
-            ),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, size: 26),
+            tooltip: 'Open Menu',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
-        ],
+        ),
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
@@ -30,43 +31,84 @@ class DashboardScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                _buildBalanceCard(provider),
-                const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Transactions',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+          final monthStr = DateFormat('MMMM yyyy').format(provider.selectedMonth);
+          final transactions = provider.monthTransactions;
+
+          return RefreshIndicator(
+            onRefresh: () => provider.loadInitialData(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Sleek Month Selector
+                  _buildMonthSelector(provider, monthStr),
+                  const SizedBox(height: 18),
+
+                  // 2. Hero Balance Card
+                  _buildBalanceCard(provider),
+                  const SizedBox(height: 24),
+
+                  // 3. Recent Transactions Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Recent Transactions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${provider.transactions.length} total',
-                      style: AppTheme.labelMedium,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                Expanded(
-                  child: provider.transactions.isEmpty
-                      ? _buildEmptyState()
+                      if (transactions.isNotEmpty)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HistoryScreen(),
+                              ),
+                            );
+                          },
+                          child: const Row(
+                            children: [
+                              Text(
+                                'View All',
+                                style: TextStyle(
+                                  color: AppTheme.accentPurple,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 18,
+                                color: AppTheme.accentPurple,
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // 4. Transaction List
+                  transactions.isEmpty
+                      ? _buildEmptyState(context)
                       : ListView.builder(
-                          itemCount: provider.transactions.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: transactions.length > 6 ? 6 : transactions.length,
                           itemBuilder: (context, index) {
-                            final tx = provider.transactions[index];
+                            final tx = transactions[index];
                             return _buildTransactionItem(context, tx, provider);
                           },
                         ),
-                ),
-              ],
+                  const SizedBox(height: 80), // Padding for FAB
+                ],
+              ),
             ),
           );
         },
@@ -76,16 +118,59 @@ class DashboardScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddTransactionScreen(),
+              builder: (context) => const AddEditTransactionScreen(),
             ),
           );
         },
-        label: const Text('Add Transaction'),
-        icon: const Icon(Icons.add),
+        label: const Text(
+          'Add Transaction',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        icon: const Icon(Icons.add_rounded),
       ),
     );
   }
 
+  // ================= 1. MONTH SELECTOR ================= //
+  Widget _buildMonthSelector(ExpenseProvider provider, String monthStr) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded, color: Colors.white70),
+            onPressed: () => provider.previousMonth(),
+          ),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_rounded, size: 16, color: AppTheme.accentPurple),
+              const SizedBox(width: 8),
+              Text(
+                monthStr,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+            onPressed: () => provider.nextMonth(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= 3. BALANCE CARD ================= //
   Widget _buildBalanceCard(ExpenseProvider provider) {
     return Container(
       width: double.infinity,
@@ -93,17 +178,17 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.accentPurple.withOpacity(0.8),
-            AppTheme.accentPurple.withOpacity(0.4),
+            AppTheme.accentPurple.withValues(alpha: 0.9),
+            const Color(0xFF5A4FCF),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.accentPurple.withOpacity(0.2),
-            blurRadius: 20,
+            color: AppTheme.accentPurple.withValues(alpha: 0.25),
+            blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
@@ -112,29 +197,29 @@ class DashboardScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Total Balance',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            'Month Net Balance',
+            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            '\$${provider.totalBalance.toStringAsFixed(2)}',
+            AppTheme.formatAmount(provider.monthBalance),
             style: AppTheme.balanceLarge,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
           Row(
             children: [
-              _buildSummaryItem(
+              _buildMetricPill(
                 label: 'Income',
-                amount: provider.totalIncome,
-                icon: Icons.arrow_downward,
+                amount: provider.monthIncome,
+                icon: Icons.arrow_downward_rounded,
                 color: Colors.greenAccent,
               ),
-              const SizedBox(width: 20),
-              _buildSummaryItem(
+              const SizedBox(width: 14),
+              _buildMetricPill(
                 label: 'Expenses',
-                amount: provider.totalExpenses,
-                icon: Icons.arrow_upward,
-                color: Colors.redAccent,
+                amount: provider.monthExpenses,
+                icon: Icons.arrow_upward_rounded,
+                color: const Color(0xFFFF6B81),
               ),
             ],
           ),
@@ -143,7 +228,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryItem({
+  Widget _buildMetricPill({
     required String label,
     required double amount,
     required IconData icon,
@@ -151,29 +236,30 @@ class DashboardScreen extends StatelessWidget {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
           children: [
             CircleAvatar(
-              radius: 16,
-              backgroundColor: color.withOpacity(0.2),
-              child: Icon(icon, size: 16, color: color),
+              radius: 14,
+              backgroundColor: color.withValues(alpha: 0.2),
+              child: Icon(icon, size: 14, color: color),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    '\$${amount.toStringAsFixed(2)}',
+                    AppTheme.formatAmount(amount),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -190,111 +276,123 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  // ================= 4. TRANSACTION ITEM ================= //
   Widget _buildTransactionItem(
     BuildContext context,
     Transaction tx,
     ExpenseProvider provider,
   ) {
     final isExpense = tx.type == TransactionType.expense;
+    final isIncome = tx.type == TransactionType.income;
+    final category = provider.getCategoryById(tx.categoryId);
+    final account = provider.getAccountById(tx.accountId);
+
+    final itemColor = isExpense
+        ? AppTheme.expenseRed
+        : (isIncome ? AppTheme.incomeGreen : AppTheme.accentPurple);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppTheme.surfaceDark,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: (isExpense ? AppTheme.expenseRed : AppTheme.incomeGreen)
-                  .withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddEditTransactionScreen(transactionToEdit: tx),
             ),
-            child: Icon(
-              isExpense ? Icons.north_east : Icons.south_west,
-              color: isExpense ? AppTheme.expenseRed : AppTheme.incomeGreen,
-            ),
+          );
+        },
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: (category?.color ?? itemColor).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  DateFormat('MMM dd, yyyy').format(tx.date),
-                  style: AppTheme.labelMedium,
-                ),
-              ],
-            ),
+          child: Icon(
+            category?.icon ??
+                (isExpense
+                    ? Icons.north_east_rounded
+                    : (isIncome ? Icons.south_west_rounded : Icons.sync_alt_rounded)),
+            color: category?.color ?? itemColor,
+            size: 20,
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isExpense ? "-" : "+"} \$${tx.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: isExpense ? AppTheme.expenseRed : AppTheme.incomeGreen,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+        ),
+        title: Text(
+          tx.title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        subtitle: Text(
+          '${DateFormat('MMM dd').format(tx.date)} • ${account?.name ?? "Cash"}',
+          style: AppTheme.labelMedium.copyWith(fontSize: 12),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              AppTheme.formatSignedAmount(
+                tx.amount,
+                isExpense: isExpense,
+                isIncome: isIncome,
               ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color:
-                      (isExpense ? AppTheme.expenseRed : AppTheme.incomeGreen)
-                          .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  isExpense ? 'Expense' : 'Income',
-                  style: TextStyle(
-                    color: isExpense
-                        ? AppTheme.expenseRed
-                        : AppTheme.incomeGreen,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              style: TextStyle(
+                color: itemColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
               ),
-            ],
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: () {
-              provider.deleteTransaction(tx.id);
-            },
-            icon: const Icon(Icons.delete_outline, color: Colors.white70),
-          ),
-        ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              tx.type.name.toUpperCase(),
+              style: TextStyle(
+                color: itemColor.withValues(alpha: 0.8),
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  // ================= 5. EMPTY STATE ================= //
+  Widget _buildEmptyState(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.receipt_long_outlined,
-            size: 80,
-            color: AppTheme.textGrey.withOpacity(0.5),
+            size: 54,
+            color: AppTheme.textGrey.withValues(alpha: 0.4),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           const Text(
-            'No transactions yet',
-            style: TextStyle(color: AppTheme.textGrey, fontSize: 18),
+            'No transactions this month',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tap the button below to add your first expense or income.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
           ),
         ],
       ),
