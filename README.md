@@ -1,6 +1,6 @@
-# Expense Tracker App
+# Vault
 
-A high-fidelity, Material 3 Expense Tracker application built with Flutter using the **MVVM (Model-View-ViewModel)** architecture and **Provider** for state management. This app allows users to track their income and expenses with local data persistence.
+A high-fidelity, Material 3 Personal Finance & Ledger application built with Flutter using the **MVVM (Model-View-ViewModel)** architecture and **Provider** for state management. Vault is designed with an **offline-first** architecture with local SQLite persistence, supporting secure cloud backup/restore via Supabase.
 
 ## 🚀 Features
 

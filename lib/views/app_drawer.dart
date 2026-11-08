@@ -56,7 +56,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Expense Tracker',
+                  'Vault',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -65,7 +65,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Offline Personal Ledger',
+                  'Personal Finance Ledger',
                   style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
                 ),
               ],

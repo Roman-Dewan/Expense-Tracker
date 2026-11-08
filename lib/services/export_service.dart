@@ -59,7 +59,7 @@ class ExportService {
 
     switch (format) {
       case ExportFormat.pdf:
-        filename = 'Expense_Report_$monthStr.pdf';
+        filename = 'Vault_Report_$monthStr.pdf';
         bytes = await _generatePdfBytes(
           monthDisplay: monthDisplay,
           transactions: transactions,
@@ -68,7 +68,7 @@ class ExportService {
         );
         break;
       case ExportFormat.excel:
-        filename = 'Expense_Report_$monthStr.xlsx';
+        filename = 'Vault_Report_$monthStr.xlsx';
         bytes = await _generateExcelBytes(
           monthDisplay: monthDisplay,
           transactions: transactions,
@@ -77,7 +77,7 @@ class ExportService {
         );
         break;
       case ExportFormat.csv:
-        filename = 'Expense_Report_$monthStr.csv';
+        filename = 'Vault_Report_$monthStr.csv';
         bytes = await _generateCsvBytes(
           transactions: transactions,
           categoryMap: categoryMap,

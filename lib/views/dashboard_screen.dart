@@ -16,7 +16,7 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        title: const Text('Expense Tracker'),
+        title: const Text('Vault'),
         leading: Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu_rounded, size: 26),

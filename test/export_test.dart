@@ -54,7 +54,7 @@ void main() {
 
       // On desktop / test environment, it saves to Downloads folder or returns result
       expect(pdfResult.success, isTrue);
-      expect(pdfResult.fileName, 'Expense_Report_2026_10.pdf');
+      expect(pdfResult.fileName, 'Vault_Report_2026_10.pdf');
 
       // Test Excel export
       final excelResult = await ExportService.instance.exportMonthTransactions(
@@ -66,7 +66,7 @@ void main() {
       );
 
       expect(excelResult.success, isTrue);
-      expect(excelResult.fileName, 'Expense_Report_2026_10.xlsx');
+      expect(excelResult.fileName, 'Vault_Report_2026_10.xlsx');
 
       // Test CSV export
       final csvResult = await ExportService.instance.exportMonthTransactions(
@@ -78,7 +78,7 @@ void main() {
       );
 
       expect(csvResult.success, isTrue);
-      expect(csvResult.fileName, 'Expense_Report_2026_10.csv');
+      expect(csvResult.fileName, 'Vault_Report_2026_10.csv');
     });
   });
 }
